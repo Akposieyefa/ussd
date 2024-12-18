@@ -291,25 +291,17 @@ class UssdController extends Controller
 
     public function testUssd(Request $request)
     {
-        // return Session::flush();
-        // Session::all();
-        // return $reg_step = Session::get('reg_step') ?? null;
+        // Log all incoming Request
         Log::info("************ USSD *****************");
         Log::info($request->all());
         Log::info("************ USSD *****************");
 
         // Get user input from the USSD request
-        $sessionSet = null;
         $userInput = $request->input('text');
         $sessionId = $request->input('sessionId');
         $phoneNumber = substr($request->input('phoneNumber'), 4);
         $phoneNumber = '0'.$phoneNumber;
         $serviceCode = $request->input('serviceCode');
-        
-        // Check if Session set, otherwise Set
-        if(!Session::has('session_id')) {
-            Session::put('session_id', $sessionId);
-        }
 
         // Process the user input
         $response = $this->processActions($userInput, $sessionId, $phoneNumber, $serviceCode);
@@ -321,18 +313,12 @@ class UssdController extends Controller
     private function processActions($userInput, $sessionId, $phoneNumber, $serviceCode)
     {
         $last = substr($userInput, strrpos($userInput, '*') + 1);
-        $lastInput = explode('*', $userInput);
         $customer = DB::table('users')->where('phone', '=', $phoneNumber)->first();
         $customerName = $customer->name ?? null;
-        $sessionSet = null;
         
         if(!$customer) {
           return "END Signup with VETKONECT mobile app to use this service.";
         }
-
-        /* if(Hash::check($sessionId, Session::get('session_id'))){
-            $sessionSet = true;
-        } */
 
         switch($userInput){
 
@@ -375,65 +361,102 @@ class UssdController extends Controller
                 break;
             
             // *1 => Register Veterinarian/VPP
+            // Accept Name
             case '1*1':
                 $response = "CON Veterinarian/VPP \n";
                 $response .= "Enter Name \n";
-                Session::put(['reg_step1' => 1]);
                 break;
             
-            // *1* Input => Accepts Name
-            case "1*1*".$last:
-                /* $regStep1 = Session::get('reg_step1');
-                $regStep2 = Session::get('reg_step2');
-                $regStep3 = Session::get('reg_step3');
-                $regStep4 = Session::get('reg_step4');
-                if ($sessionSet != false){
-                    switch()
-                } else {
-                    $response = "END Error in Processing \n";
-                    $response .= "Operation Cancelled \n";
+            // *1* Input => Accept Phone Number
+            // case "1*1*".$last:
+            case (strpos($userInput, '1*1') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[2] ?? null;
+                $step3 = $lastInput[3] ?? null;
+                $step4 = $lastInput[4] ?? null;
+                $step5 = $lastInput[5] ?? null;
+                $step6 = $lastInput[6] ?? null;
 
-                } */
-                if(Session::get('reg_step1') == 1 && Session::get('session_id') == $sessionId){
+                if($step2 != null && $step3 == null){
                     $response = "CON Veterinarian/VPP \n";
-                    $response .= "Enter Phone Number \n";
-                    Session::put(['reg_step2' => true]);
-                    // Session::forget('reg_step1');
-
-                } else if(Session::get('reg_step2') != false && $sessionSet != false){
-                    $response = "CON Veterinarian/VPP \n";
-                    $response .= "Enter License number \n";
-                    Session::put(['reg_step3' => true]);
-                    Session::forget('reg_step2');
-
-                } else if(Session::get('reg_step3') != false && $sessionSet != false){
-                    $response = "CON Veterinarian/VPP \n";
-                    $response .= "Enter Location \n";
-                    Session::put(['reg_step4' => true]);
-                    Session::forget('reg_step3');
-
-                } else if(Session::get('reg_step4') != false && $sessionSet != false){
-                    $response = "END Veterinarian/VPP \n";
-                    $response .= "Registration Successful! \n";
-                    $response .= "0. Exit \n";
-                    Session::flush();
-
-                } else{
-                    $response = "END Error in Processing \n";
-                    $response .= "Operation Cancelled \n";
+                    $response .= "Name Submitted \n";                
+                    $response .= "Enter Phone Number \n";                
+                    break;
                 }
-                break;
-            
-            // *0 => Exit
-            case '1*1*0':
-                $response = "END Thank you '{$customerName}' for using Vet Konect. Goodbye!";
-                break;
-            
-            // *2 => Livestock Farmer
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "CON Veterinarian/VPP \n";
+                    $response .= "Phone Number Submitted \n";                
+                    $response .= "Enter License Number \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    $response = "CON Veterinarian/VPP \n";
+                    $response .= "License Number Submitted \n";                
+                    $response .= "Enter Location \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    $response = "END Veterinarian/VPP \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Thank you for Registering \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+                else {
+                    $response = "END Veterinarian/VPP \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+
+            // '*2' => Livestock Farmer
+            // Accept Name
             case '1*2':
                 $response = "CON Livestock Farmer \n";
                 $response .= "Enter Name \n";
                 break;
+            
+            case (strpos($userInput, '1*2') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[2] ?? null;
+                $step3 = $lastInput[3] ?? null;
+                $step4 = $lastInput[4] ?? null;
+                $step5 = $lastInput[5] ?? null;
+                $step6 = $lastInput[6] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON Livestock Farmer \n";
+                    $response .= "Name Submitted \n";                
+                    $response .= "Enter Phone Number \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "CON Livestock Farmer \n";
+                    $response .= "Phone Number Submitted \n";                
+                    $response .= "Enter Location \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    $response = "CON Livestock Farmer \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Type of Livestock \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    $response = "END Livestock Farmer \n";
+                    $response .= "Type of Livestock Submitted \n";                
+                    $response .= "Thank you for Registering \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+                else {
+                    $response = "END Livestock Farmer \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
             
             // *3 => Pet Owner
             case '1*3':
@@ -441,11 +464,94 @@ class UssdController extends Controller
                 $response .= "Enter Name \n";
                 break;
             
+            case (strpos($userInput, '1*3') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[2] ?? null;
+                $step3 = $lastInput[3] ?? null;
+                $step4 = $lastInput[4] ?? null;
+                $step5 = $lastInput[5] ?? null;
+                $step6 = $lastInput[6] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON Pet Owner \n";
+                    $response .= "Name Submitted \n";                
+                    $response .= "Enter Phone Number \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "CON Pet Owner \n";
+                    $response .= "Phone Number Submitted \n";                
+                    $response .= "Enter Location \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    $response = "CON Pet Owner \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Type of Pet \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    $response = "END Pet Owner \n";
+                    $response .= "Type of Pet Submitted \n";                
+                    $response .= "Thank you for Registering \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+                else {
+                    $response = "END Pet Owner \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+            
             // *4 => Vendor
             case '1*4':
                 $response = "CON Vendor \n";
                 $response .= "Enter Name \n";
                 break;
+            
+            case (strpos($userInput, '1*4') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[2] ?? null;
+                $step3 = $lastInput[3] ?? null;
+                $step4 = $lastInput[4] ?? null;
+                $step5 = $lastInput[5] ?? null;
+                $step6 = $lastInput[6] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON Vendor \n";
+                    $response .= "Name Submitted \n";                
+                    $response .= "Enter Phone Number \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "CON Vendor \n";
+                    $response .= "Phone Number Submitted \n";                
+                    $response .= "Enter Location \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    $response = "CON Vendor \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Type of Products \n";                
+                    $response .= "Seperated by Comman ',' \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    $response = "END Vendor \n";
+                    $response .= "Type of Products Submitted \n";                
+                    $response .= "Thank you for Registering \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+                else {
+                    $response = "END Vendor \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
                 
             /**
              * 2. Veterinary Services
@@ -464,9 +570,37 @@ class UssdController extends Controller
                 $response .= "Enter Location \n";
                 break;
             
+            case (strpos($userInput, '2*1') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[2] ?? null;
+                $step3 = $lastInput[3] ?? null;
+                $step4 = $lastInput[4] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON Request Vet Visit \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Preferred Date \n";                
+                    $response .= "FORMAT: '[DD-MM-YYYY]' \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "END Request Vet Visit \n";
+                    $response .= "Request Submitted \n";                
+                    $response .= "A Vet will contact you shortly. \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+                else {
+                    $response = "END Veterinarian/VPP \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+            
             // *2 => Health Tips
             case '2*2':
-                $response = "CON Emergency Services \n";
+                $response = "END Emergency Services \n";
                 $response .= "Call our emergency hotline: 08066459317 \n";
                 break;
             
@@ -490,12 +624,24 @@ class UssdController extends Controller
                 $response .= "0. Back \n";
                 break;
             
+            case '2*3*1*'.$last:
+                $response = "END Poultry \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
+                break;
+            
             // *2*2 => Sheep/Goats
             case '2*3*2':
                 $response = "CON Sheep/Goats \n";
                 $response .= "1. Disease Prevention Tips \n";
                 $response .= "2. Feeding Guidelines \n";
                 $response .= "0. Back \n";
+                break;
+            
+            case '2*3*2*'.$last:
+                $response = "END Sheep/Goats \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
                 break;
             
             // *2*3 => Cattle
@@ -506,12 +652,24 @@ class UssdController extends Controller
                 $response .= "0. Back \n";
                 break;
             
+            case '2*3*3*'.$last:
+                $response = "END Cattle \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
+                break;
+            
             // *2*1 => Dogs/Cats
             case '2*3*4':
                 $response = "CON Dogs/Cats \n";
                 $response .= "1. Disease Prevention Tips \n";
                 $response .= "2. Feeding Guidelines \n";
                 $response .= "0. Back \n";
+                break;
+            
+            case '2*3*4*'.$last:
+                $response = "END Dogs/Cats \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
                 break;
             
             // *2*1 => Fish
@@ -522,12 +680,24 @@ class UssdController extends Controller
                 $response .= "0. Back \n";
                 break;
             
+            case '2*3*5*'.$last:
+                $response = "END Fish \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
+                break;
+            
             // *2*1 => Others (type)
             case '2*3*6':
                 $response = "CON Others (type) \n";
                 $response .= "1. Disease Prevention Tips \n";
                 $response .= "2. Feeding Guidelines \n";
                 $response .= "0. Back \n";
+                break;
+            
+            case '2*3*6*'.$last:
+                $response = "END Others (type) \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
                 break;
                 
             /**
@@ -548,6 +718,12 @@ class UssdController extends Controller
                 $response .= "0. Back \n";
                 break;
             
+            case '3*1*'.$last:
+                $response = "END Training Schedule \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
+                break;
+            
             // *2 => Access Resources
             case '3*2':
                 $response = "CON Access Resources \n";
@@ -555,6 +731,12 @@ class UssdController extends Controller
                 $response .= "2. Watch Videos \n";
                 $response .= "0. Back \n";
                 break; 
+            
+            case '3*2*'.$last:
+                $response = "END Access Resources \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
+                break;
                 
             /**
              * 4. Vaccination Schedule
@@ -577,6 +759,12 @@ class UssdController extends Controller
                 $response .= "0. Back \n";
                 break; 
             
+            case '4*1*'.$last:
+                $response = "END (Check Schedule) \n";
+                $response .= "Coming Soon.. \n";
+                $response .= "Bye.. \n";
+                break;
+            
             // *2 => Book Vaccination
             case '4*2':
                 $response = "CON (Book Vaccination) Enter Type of Animal \n";
@@ -584,9 +772,141 @@ class UssdController extends Controller
                 $response .= "2. Sheep/Goats \n";
                 $response .= "3. Cattle \n";
                 $response .= "4. Dogs/Cats \n";
-                $response .= "5. Fish \n";
+                // $response .= "5. Fish \n";
                 $response .= "0. Back \n";
                 break;
+            
+            // Book Appointment for Poultry
+            case '4*2*1':
+                $response = "CON (Book Vaccination) Poultry \n";
+                $response .= "Enter Enter Location \n"; 
+                break;
+            
+            case (strpos($userInput, '4*2*1') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[3] ?? null;
+                $step3 = $lastInput[4] ?? null;
+                $step4 = $lastInput[5] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON (Book Vaccination) Poultry \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Preferred Date \n";                
+                    $response .= "FORMAT: '[DD-MM-YYYY]' \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "END (Book Vaccination) Poultry \n";
+                    $response .= "Preferred Date Submitted \n";                
+                    $response .= "Booking confirmed! \n";                
+                    break;
+                }
+                else {
+                    $response = "END (Book Vaccination) Poultry \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+            
+            // Book Appointment for Sheep/Goats
+            case '4*2*2':
+                $response = "CON (Book Vaccination) Sheep/Goats \n";
+                $response .= "Enter Enter Location \n"; 
+                break;
+            
+            case (strpos($userInput, '4*2*2') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[3] ?? null;
+                $step3 = $lastInput[4] ?? null;
+                $step4 = $lastInput[5] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON (Book Vaccination) Sheep/Goats \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Preferred Date \n";                
+                    $response .= "FORMAT: '[DD-MM-YYYY]' \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "END (Book Vaccination) Sheep/Goats \n";
+                    $response .= "Preferred Date Submitted \n";                
+                    $response .= "Booking confirmed! \n";                
+                    break;
+                }
+                else {
+                    $response = "END (Book Vaccination) Sheep/Goats \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+
+            // Book Appointment for Cattle
+            case '4*2*3':
+                $response = "CON (Book Vaccination) Cattle \n";
+                $response .= "Enter Enter Location \n"; 
+                break;
+            
+            case (strpos($userInput, '4*2*3') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[3] ?? null;
+                $step3 = $lastInput[4] ?? null;
+                $step4 = $lastInput[5] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON (Book Vaccination) Cattle \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Preferred Date \n";                
+                    $response .= "FORMAT: '[DD-MM-YYYY]' \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "END (Book Vaccination) Cattle \n";
+                    $response .= "Preferred Date Submitted \n";                
+                    $response .= "Booking confirmed! \n";                
+                    break;
+                }
+                else {
+                    $response = "END (Book Vaccination) Cattle \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
+            
+            // Book Appointment for Dogs/Cats
+            case '4*2*4':
+                $response = "CON (Book Vaccination) Dogs/Cats \n";
+                $response .= "Enter Enter Location \n"; 
+                break;
+            
+            case (strpos($userInput, '4*2*4') === 0):
+                $lastInput = explode('*', $userInput);
+                $step2 = $lastInput[3] ?? null;
+                $step3 = $lastInput[4] ?? null;
+                $step4 = $lastInput[5] ?? null;
+
+                if($step2 != null && $step3 == null){
+                    $response = "CON (Book Vaccination) Dogs/Cats \n";
+                    $response .= "Location Submitted \n";                
+                    $response .= "Enter Preferred Date \n";                
+                    $response .= "FORMAT: '[DD-MM-YYYY]' \n";                
+                    break;
+                }
+                else if($step2 != null && $step3 != null && $step4 == null){
+                    $response = "END (Book Vaccination) Dogs/Cats \n";
+                    $response .= "Preferred Date Submitted \n";                
+                    $response .= "Booking confirmed! \n";                
+                    break;
+                }
+                else {
+                    $response = "END (Book Vaccination) Dogs/Cats \n";
+                    $response .= "Unknown Error \n";                
+                    $response .= "Please Try Again \n";                
+                    $response .= "GoodBye \n";                
+                    break;
+                }
                 
             /**
              * 5. Call Support/Helpline
@@ -600,7 +920,7 @@ class UssdController extends Controller
             
             // *1 =>  Contact Us
             case '5*1':
-                $response = "CON Call our support line: 08066459317 \n";
+                $response = "END Call our support line: 08066459317 \n";
                 break;
             
             // *2 =>  FAQ
@@ -611,6 +931,12 @@ class UssdController extends Controller
                 $response .= "3. How to Access Resources \n";
                 $response .= "0. Back \n";
                 $response .= "0. Exit \n";
+                break;
+            
+            case '5*2*'.$last:
+                $response = "END FAQ \n";
+                $response .= "Feature Coming Soon.. \n";
+                $response .= "Good Bye.. \n";
                 break;
             
             /**
