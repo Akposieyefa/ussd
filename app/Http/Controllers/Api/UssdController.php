@@ -5,9 +5,7 @@ namespace App\Http\Controllers\API;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Session;
 
 
 class UssdController extends Controller
@@ -303,6 +301,12 @@ class UssdController extends Controller
         $phoneNumber = '0'.$phoneNumber;
         $serviceCode = $request->input('serviceCode');
 
+        /**
+         * Validate SessionID and Store for further 
+         * Authentication processing...
+         * Here....
+         */
+
         // Process the user input
         $response = $this->processActions($userInput, $sessionId, $phoneNumber, $serviceCode);
 
@@ -313,8 +317,14 @@ class UssdController extends Controller
     private function processActions($userInput, $sessionId, $phoneNumber, $serviceCode)
     {
         $last = substr($userInput, strrpos($userInput, '*') + 1);
+
+        // Check your DB Table for users
         $customer = DB::table('users')->where('phone', '=', $phoneNumber)->first();
         $customerName = $customer->name ?? null;
+
+        /**
+         * Validate SessionID for authentications
+         */
         
         if(!$customer) {
           return "END Signup with VETKONECT mobile app to use this service.";
@@ -334,6 +344,13 @@ class UssdController extends Controller
                 $response .= "5. Call Support/Helpline \n";
                 $response .= "0. Exit \n";
                 break;
+            
+                /**
+                 * 0. End Session
+                 */
+                case '0':
+                    $response = "END Thank you '{$customerName}' for using Vet Konect. Goodbye!";
+                    break;
             
             /**
              * 1. Register
@@ -378,24 +395,36 @@ class UssdController extends Controller
                 $step6 = $lastInput[6] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Veterinarian/VPP \n";
                     $response .= "Name Submitted \n";                
                     $response .= "Enter Phone Number \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Veterinarian/VPP \n";
                     $response .= "Phone Number Submitted \n";                
                     $response .= "Enter License Number \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Veterinarian/VPP \n";
                     $response .= "License Number Submitted \n";                
                     $response .= "Enter Location \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END Veterinarian/VPP \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Thank you for Registering \n";                
@@ -426,24 +455,36 @@ class UssdController extends Controller
                 $step6 = $lastInput[6] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Livestock Farmer \n";
                     $response .= "Name Submitted \n";                
                     $response .= "Enter Phone Number \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Livestock Farmer \n";
                     $response .= "Phone Number Submitted \n";                
                     $response .= "Enter Location \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+                    
                     $response = "CON Livestock Farmer \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Type of Livestock \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END Livestock Farmer \n";
                     $response .= "Type of Livestock Submitted \n";                
                     $response .= "Thank you for Registering \n";                
@@ -473,24 +514,36 @@ class UssdController extends Controller
                 $step6 = $lastInput[6] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Pet Owner \n";
                     $response .= "Name Submitted \n";                
                     $response .= "Enter Phone Number \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Pet Owner \n";
                     $response .= "Phone Number Submitted \n";                
                     $response .= "Enter Location \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Pet Owner \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Type of Pet \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END Pet Owner \n";
                     $response .= "Type of Pet Submitted \n";                
                     $response .= "Thank you for Registering \n";                
@@ -520,18 +573,27 @@ class UssdController extends Controller
                 $step6 = $lastInput[6] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Vendor \n";
                     $response .= "Name Submitted \n";                
                     $response .= "Enter Phone Number \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Vendor \n";
                     $response .= "Phone Number Submitted \n";                
                     $response .= "Enter Location \n";                
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Vendor \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Type of Products \n";                
@@ -539,6 +601,9 @@ class UssdController extends Controller
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 != null && $step5 != null && $step6 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END Vendor \n";
                     $response .= "Type of Products Submitted \n";                
                     $response .= "Thank you for Registering \n";                
@@ -551,7 +616,21 @@ class UssdController extends Controller
                     $response .= "Please Try Again \n";                
                     $response .= "GoodBye \n";                
                     break;
-                }
+                } 
+            
+            /**
+             * 1*0 => End Session
+             */
+            case '1*0*0':
+                $response = "END Thank you '{$customerName}' for using Vet Konect. Goodbye!";
+                break; 
+            
+            /**
+             * 1*0 => End Session
+             */
+            case '1*0*'.$last:
+                $response = "END Unknown Command. Goodbye!";
+                break;
                 
             /**
              * 2. Veterinary Services
@@ -577,6 +656,9 @@ class UssdController extends Controller
                 $step4 = $lastInput[4] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON Request Vet Visit \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Preferred Date \n";                
@@ -584,6 +666,9 @@ class UssdController extends Controller
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END Request Vet Visit \n";
                     $response .= "Request Submitted \n";                
                     $response .= "A Vet will contact you shortly. \n";                
@@ -789,6 +874,9 @@ class UssdController extends Controller
                 $step4 = $lastInput[5] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON (Book Vaccination) Poultry \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Preferred Date \n";                
@@ -796,6 +884,9 @@ class UssdController extends Controller
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END (Book Vaccination) Poultry \n";
                     $response .= "Preferred Date Submitted \n";                
                     $response .= "Booking confirmed! \n";                
@@ -822,6 +913,9 @@ class UssdController extends Controller
                 $step4 = $lastInput[5] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON (Book Vaccination) Sheep/Goats \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Preferred Date \n";                
@@ -829,6 +923,9 @@ class UssdController extends Controller
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END (Book Vaccination) Sheep/Goats \n";
                     $response .= "Preferred Date Submitted \n";                
                     $response .= "Booking confirmed! \n";                
@@ -855,6 +952,9 @@ class UssdController extends Controller
                 $step4 = $lastInput[5] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON (Book Vaccination) Cattle \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Preferred Date \n";                
@@ -862,6 +962,9 @@ class UssdController extends Controller
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END (Book Vaccination) Cattle \n";
                     $response .= "Preferred Date Submitted \n";                
                     $response .= "Booking confirmed! \n";                
@@ -888,6 +991,9 @@ class UssdController extends Controller
                 $step4 = $lastInput[5] ?? null;
 
                 if($step2 != null && $step3 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "CON (Book Vaccination) Dogs/Cats \n";
                     $response .= "Location Submitted \n";                
                     $response .= "Enter Preferred Date \n";                
@@ -895,6 +1001,9 @@ class UssdController extends Controller
                     break;
                 }
                 else if($step2 != null && $step3 != null && $step4 == null){
+                    // Add info to Database
+                    $this->saveInfoToDatabase($last);
+
                     $response = "END (Book Vaccination) Dogs/Cats \n";
                     $response .= "Preferred Date Submitted \n";                
                     $response .= "Booking confirmed! \n";                
@@ -940,13 +1049,6 @@ class UssdController extends Controller
                 break;
             
             /**
-             * 0. End Session
-             */
-            case '0':
-                $response = "END Thank you '{$customerName}' for using Vet Konect. Goodbye!";
-                break;
-            
-            /**
              * 'Invalid Input' Default
              */
             default:
@@ -958,6 +1060,16 @@ class UssdController extends Controller
         return $response;
 
 
+    }
+
+    /**
+     * Process info to Databse
+     */
+    private function saveInfoToDatabase($data)
+    {
+        // Run all your DB Insert and Update Query
+        Log::info('Data to Process: ' .$data);
+        Log::info('Break '.now());
     }
 
 
